@@ -1,3 +1,8 @@
+import type { Metadata } from "next";
+import { Geist } from "next/font/google";
+import "./globals.css";
+
+
 import { Geist } from "next/font/google";
 import "./globals.css";
 
@@ -8,7 +13,7 @@ export const metadata = {
   description: "Kelola dan tracking KOL Affiliate Branding",
 };
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id">
       <body className={geist.className}>
