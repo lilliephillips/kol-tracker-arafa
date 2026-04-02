@@ -19,15 +19,18 @@ export async function GET(request) {
       .single()
 
     const { data: kampanye_kols } = await supabase
-      .from('campaign_kols')
-      .select(`
-        *,
-        kols (
-          id, nama, platform, handle, niche,
-          fee_kol, biaya_produk, total_biaya, status_aktif
-        )
-      `)
-      .eq('campaign_id', id)
+  .from('campaign_kols')
+  .select(`
+    *,
+    kols (
+      id, nama, platform, handle, niche,
+      fee_kol, biaya_produk, total_biaya, status_aktif
+    ),
+    produk_variasi (
+      id, nama_variasi, ukuran, warna, hpp
+    )
+  `)
+  .eq('campaign_id', id)
 
     // Ambil engagement terbaru per KOL
     const kolsWithEng = await Promise.all(

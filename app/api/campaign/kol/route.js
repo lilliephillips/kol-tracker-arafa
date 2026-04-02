@@ -1,16 +1,43 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
-// POST - Tambah KOL ke campaign
+// Generate kode unik otomatis
+function generateKodeUnik(namaKampanye) {
+  const prefix = namaKampanye
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .substring(0, 3)
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase()
+  const timestamp = Date.now().toString().slice(-4)
+  return `${prefix}-${random}-${timestamp}`
+}
+
 export async function POST(request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
+
+  // Ambil nama campaign untuk generate kode unik
+  const { data: campaign } = await supabase
+    .from('campaigns')
+    .select('nama')
+    .eq('id', body.campaign_id)
+    .single()
+
+  // Hitung hpp_total
+  const hpp_total = (body.hpp_satuan || 0) * (body.quantity || 1)
+
+  const payload = {
+    ...body,
+    kode_unik: generateKodeUnik(campaign?.nama || 'CMP'),
+    hpp_total,
+  }
+
   const { data, error } = await supabase
     .from('campaign_kols')
-    .insert([body])
+    .insert([payload])
     .select()
     .single()
 
@@ -18,7 +45,6 @@ export async function POST(request) {
   return NextResponse.json(data)
 }
 
-// PUT - Update tanggal kirim barang
 export async function PUT(request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -26,6 +52,11 @@ export async function PUT(request) {
 
   const body = await request.json()
   const { id, ...updateData } = body
+
+  // Recalculate hpp_total kalau ada perubahan qty/hpp
+  if (updateData.quantity || updateData.hpp_satuan) {
+    updateData.hpp_total = (updateData.hpp_satuan || 0) * (updateData.quantity || 1)
+  }
 
   const { data, error } = await supabase
     .from('campaign_kols')
@@ -38,7 +69,6 @@ export async function PUT(request) {
   return NextResponse.json(data)
 }
 
-// DELETE - Hapus KOL dari campaign
 export async function DELETE(request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
