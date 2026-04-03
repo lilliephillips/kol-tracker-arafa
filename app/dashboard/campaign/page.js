@@ -15,7 +15,7 @@ export default function CampaignPage() {
   const [showForm, setShowForm] = useState(false)
   const [editData, setEditData] = useState(null)
   const [form, setForm] = useState({
-  nama: '', deskripsi: '', status: 'aktif', budget: 0
+  nama: '', deskripsi: '', status: 'aktif', budget: 0, target_impressi: 0
 })
 
   useEffect(() => { fetchCampaigns() }, [])
@@ -35,11 +35,12 @@ export default function CampaignPage() {
   }
 
   function handleEdit(campaign) {
-    setForm({
+setForm({
   nama: campaign.nama,
   deskripsi: campaign.deskripsi || '',
   status: campaign.status,
-  budget: campaign.budget || 0
+  budget: campaign.budget || 0,
+  target_impressi: campaign.target_impressi || 0
 })
     setEditData(campaign)
     setShowForm(true)
@@ -200,6 +201,25 @@ export default function CampaignPage() {
   {form.budget > 0 && (
     <p className="text-xs text-gray-400 mt-1">
       = {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(form.budget)}
+    </p>
+  )}
+</div>
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Target Impressi (Views)
+  </label>
+  <input
+    type="number"
+    value={form.target_impressi}
+    onChange={e => setForm({...form, target_impressi: e.target.value})}
+    placeholder="Contoh: 1000000"
+    min="0"
+    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm 
+               focus:outline-none focus:ring-2 focus:ring-blue-500"
+  />
+  {form.target_impressi > 0 && (
+    <p className="text-xs text-gray-500 mt-1">
+      = {new Intl.NumberFormat('id-ID').format(form.target_impressi)} views
     </p>
   )}
 </div>
