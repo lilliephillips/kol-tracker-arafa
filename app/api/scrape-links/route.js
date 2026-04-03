@@ -46,19 +46,21 @@ export async function POST(request) {
       return NextResponse.json({ message: 'Tidak ada link TikTok yang perlu di-scrape', updated: 0 })
     }
 
-    const urls = links.map(l => l.url_original)
-    console.log('🚀 Starting Apify for URLs:', urls)
+    console.log('🚀 Starting Apify for', links.length, 'URLs one by one')
 
-    // Fire and forget — tidak tunggu hasil
+    // Ambil link pertama yang belum di-scrape saja
+    const link = links[0]
+    console.log('📌 Scraping:', link.url_original)
+
     const runRes = await fetch(
       `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/runs?token=${APIFY_TOKEN}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          postURLs: urls,
+          postURLs: [link.url_original],
           resultsType: 'posts',
-          maxPostsPerQuery: urls.length,
+          maxPostsPerQuery: 1,
           resultsPerPage: 1,
           shouldDownloadVideos: false,
           shouldDownloadCovers: false,
@@ -69,23 +71,24 @@ export async function POST(request) {
 
     if (!runRes.ok) {
       const err = await runRes.text()
-      console.log('❌ Apify start error:', err)
       return NextResponse.json({ error: `Gagal start Apify: ${err}` }, { status: 500 })
     }
 
     const runData = await runRes.json()
     const runId = runData?.data?.id
-    console.log('✅ Run started:', runId)
+    console.log('✅ Run started:', runId, 'for:', link.url_original)
 
     return NextResponse.json({
       success: true,
       run_id: runId,
-      message: `Scraping dimulai untuk ${urls.length} link TikTok. Tunggu 2-3 menit lalu klik "Cek Hasil".`,
-      total_links: urls.length
+      link_id: link.id,
+      message: `Scraping dimulai untuk 1 link. Auto cek setiap 15 detik.`,
+      total_links: links.length,
+      remaining: links.length - 1
     })
 
   } catch (err) {
-    console.log('❌ POST error:', err.message)
+    console.log('POST error:', err.message)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }

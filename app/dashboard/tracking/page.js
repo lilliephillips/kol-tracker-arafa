@@ -137,11 +137,17 @@ function ScrapeButton({ onDone }) {
   const [message, setMessage] = useState(null)
   const [runId, setRunId] = useState(null)
   const [checking, setChecking] = useState(false)
+  const [totalDone, setTotalDone] = useState(0)
 
   async function handleScrape() {
     setStatus('loading')
     setMessage(null)
     setRunId(null)
+    setTotalDone(0)
+    await startNextRun(0)
+  }
+
+  async function startNextRun(doneSoFar) {
     try {
       const res = await fetch('/api/scrape-links', {
         method: 'POST',
@@ -149,57 +155,65 @@ function ScrapeButton({ onDone }) {
         body: JSON.stringify({})
       })
       const data = await res.json()
+
       if (data.error) {
         setStatus('error')
         setMessage(data.error)
-      } else if (!data.run_id) {
-        setStatus('done')
-        setMessage(data.message || 'Tidak ada link yang perlu di-scrape')
-      } else {
-        setStatus('waiting')
-        setRunId(data.run_id)
-        setMessage(`Scraping dimulai (${data.total_links} link). Tunggu 2 menit lalu klik Cek Hasil.`)
-        // Auto poll setiap 15 detik
-        autoPoll(data.run_id)
+        return
       }
+
+      if (!data.run_id) {
+        // Tidak ada lagi yang perlu di-scrape
+        setStatus('done')
+        setMessage(`Selesai! ${doneSoFar} link diupdate.`)
+        onDone()
+        return
+      }
+
+      setStatus('waiting')
+      setRunId(data.run_id)
+      setMessage(`Scraping link ${doneSoFar + 1}... (${data.remaining} tersisa)`)
+      autoPoll(data.run_id, doneSoFar)
     } catch (err) {
       setStatus('error')
       setMessage(err.message)
     }
   }
 
-  async function autoPoll(rid) {
+  async function autoPoll(rid, doneSoFar) {
     let attempts = 0
-    const maxAttempts = 10 // max 10x = 150 detik
     const interval = setInterval(async () => {
       attempts++
       try {
         const res = await fetch(`/api/scrape-links?run_id=${rid}`)
         const data = await res.json()
+
         if (data.status === 'SUCCEEDED') {
           clearInterval(interval)
-          setStatus('done')
-          setRunId(null)
-          setMessage(`✅ ${data.updated} link berhasil diupdate!`)
-          onDone()
-        } else if (data.status === 'FAILED' || data.status === 'ABORTED' || data.status === 'TIMED-OUT') {
+          const newDone = doneSoFar + (data.updated || 0)
+          setTotalDone(newDone)
+          setMessage(`Link ${doneSoFar + 1} selesai (${data.updated} diupdate). Lanjut ke berikutnya...`)
+          // Langsung mulai link berikutnya
+          setTimeout(() => startNextRun(newDone), 2000)
+        } else if (['FAILED','ABORTED','TIMED-OUT'].includes(data.status)) {
+          clearInterval(interval)
+          // Skip link ini, lanjut ke berikutnya
+          setMessage(`Link ${doneSoFar + 1} gagal (${data.status}), lanjut ke berikutnya...`)
+          setTimeout(() => startNextRun(doneSoFar), 2000)
+        } else if (attempts >= 12) {
           clearInterval(interval)
           setStatus('error')
-          setMessage(`Scraping gagal: ${data.status}`)
-        } else if (attempts >= maxAttempts) {
-          clearInterval(interval)
-          setStatus('error')
-          setMessage('Timeout — scraping terlalu lama. Coba klik Cek Hasil manual.')
-          setRunId(rid) // kembalikan run_id untuk manual check
+          setMessage('Timeout. Klik Ambil Data Views lagi untuk melanjutkan.')
+          setRunId(rid)
         } else {
-          setMessage(`Sedang scraping... (${attempts * 15}s)`)
+          setMessage(`Scraping link ${doneSoFar + 1}... (${attempts * 15}s)`)
         }
       } catch (err) {
         clearInterval(interval)
         setStatus('error')
-        setMessage('Error saat cek: ' + err.message)
+        setMessage('Error: ' + err.message)
       }
-    }, 15000) // cek tiap 15 detik
+    }, 15000)
   }
 
   async function handleCekHasil() {
@@ -210,11 +224,11 @@ function ScrapeButton({ onDone }) {
       const data = await res.json()
       if (data.status === 'SUCCEEDED') {
         setStatus('done')
-        setMessage(`✅ ${data.updated} link berhasil diupdate!`)
+        setMessage(`${data.updated} link berhasil diupdate!`)
         setRunId(null)
         onDone()
       } else {
-        setMessage(`Masih ${data.status || 'berjalan'}... coba lagi sebentar`)
+        setMessage(`Masih ${data.status}... coba lagi sebentar`)
       }
     } catch (err) {
       setMessage('Error: ' + err.message)
@@ -230,7 +244,7 @@ function ScrapeButton({ onDone }) {
         className="border border-blue-200 text-blue-600 rounded-lg px-3 py-2 text-sm font-medium hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
         {status === 'loading' ? '⏳ Memulai...' : status === 'waiting' ? '⏳ Scraping...' : '🔄 Ambil Data Views'}
       </button>
-      {(status === 'waiting' || status === 'error') && runId && (
+      {status === 'error' && runId && (
         <button
           onClick={handleCekHasil}
           disabled={checking}
