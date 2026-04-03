@@ -234,77 +234,93 @@ export default function PostingPage() {
         </div>
       </div>
 
-      {/* Filter */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-        <div className="flex gap-3 flex-wrap">
-          {[{v:'',l:'Semua'},{v:'belum',l:'Belum Posting'},{v:'sudah',l:'Sudah Posting'}].map(opt => (
-            <button key={opt.v} onClick={() => setFilterStatus(opt.v)}
-              className={'px-4 py-2 rounded-lg text-sm font-medium ' +
-                (filterStatus === opt.v ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200')}>
-              {opt.l}
-            </button>
-          ))}
-          <select value={filterCampaign} onChange={e => setFilterCampaign(e.target.value)}
-            className="border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="">Semua Campaign</option>
-            {campaigns.map(c => <option key={c.id} value={c.id}>🎯 {c.nama}</option>)}
-          </select>
-        </div>
+     {/* Filter - semua horizontal */}
+<div className="bg-white rounded-xl border border-gray-200 p-4">
+  <div className="flex gap-3 flex-wrap items-center">
+    
+    {/* Status */}
+    {[{v:'',l:'Semua'},{v:'belum',l:'Belum'},{v:'sudah',l:'Sudah'}].map(opt => (
+      <button key={opt.v} onClick={() => setFilterStatus(opt.v)}
+        className={'px-3 py-2 rounded-lg text-sm font-medium ' +
+          (filterStatus === opt.v ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200')}>
+        {opt.l}
+      </button>
+    ))}
 
-        {/* Filter Tanggal Kirim */}
-        <div className="flex gap-3 flex-wrap items-center">
-          <span className="text-sm font-medium text-gray-700">Tgl Kirim:</span>
-          <select value={filterKirimMode} onChange={e => setFilterKirimMode(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="">Semua</option>
-            <option value="bulan">Per Bulan</option>
-            <option value="range">Range Tanggal</option>
-          </select>
-          {filterKirimMode === 'bulan' && (
-            <select value={filterKirimBulan} onChange={e => setFilterKirimBulan(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="">Pilih Bulan</option>
-              {BULAN.map((b, i) => <option key={i} value={i}>{b}</option>)}
-            </select>
-          )}
-          {filterKirimMode === 'range' && (
-            <>
-              <input type="date" value={filterKirimFrom} onChange={e => setFilterKirimFrom(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              <span className="text-gray-600">-</span>
-              <input type="date" value={filterKirimTo} onChange={e => setFilterKirimTo(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </>
-          )}
-        </div>
+    {/* Campaign */}
+    <select value={filterCampaign} onChange={e => setFilterCampaign(e.target.value)}
+      className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <option value="">Semua Campaign</option>
+      {campaigns.map(c => <option key={c.id} value={c.id}>🎯 {c.nama}</option>)}
+    </select>
 
-        {/* Filter Tanggal Dipost */}
-        <div className="flex gap-3 flex-wrap items-center">
-          <span className="text-sm font-medium text-gray-700">Tgl Dipost:</span>
-          <select value={filterPostMode} onChange={e => setFilterPostMode(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="">Semua</option>
-            <option value="bulan">Per Bulan</option>
-            <option value="range">Range Tanggal</option>
-          </select>
-          {filterPostMode === 'bulan' && (
-            <select value={filterPostBulan} onChange={e => setFilterPostBulan(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="">Pilih Bulan</option>
-              {BULAN.map((b, i) => <option key={i} value={i}>{b}</option>)}
-            </select>
-          )}
-          {filterPostMode === 'range' && (
-            <>
-              <input type="date" value={filterPostFrom} onChange={e => setFilterPostFrom(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              <span className="text-gray-600">-</span>
-              <input type="date" value={filterPostTo} onChange={e => setFilterPostTo(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </>
-          )}
+    {/* Filter Tgl Kirim */}
+    <div className="flex items-center gap-2">
+      <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Tgl Kirim:</span>
+      <select value={filterKirimMode} onChange={e => { setFilterKirimMode(e.target.value); setFilterKirimBulan(''); setFilterKirimFrom(''); setFilterKirimTo('') }}
+        className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="">Semua</option>
+        <option value="bulan">Bulan</option>
+        <option value="range">Range</option>
+      </select>
+      {filterKirimMode === 'bulan' && (
+        <select value={filterKirimBulan} onChange={e => setFilterKirimBulan(e.target.value)}
+          className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">Pilih Bulan</option>
+          {BULAN.map((b, i) => <option key={i} value={i}>{b}</option>)}
+        </select>
+      )}
+      {filterKirimMode === 'range' && (
+        <div className="flex items-center gap-1">
+          <input type="date" value={filterKirimFrom} onChange={e => setFilterKirimFrom(e.target.value)}
+            className="border border-gray-300 rounded-lg px-2 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <span className="text-gray-500 text-sm">–</span>
+          <input type="date" value={filterKirimTo} onChange={e => setFilterKirimTo(e.target.value)}
+            className="border border-gray-300 rounded-lg px-2 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
-      </div>
+      )}
+    </div>
+
+    {/* Filter Tgl Dipost */}
+    <div className="flex items-center gap-2">
+      <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Tgl Dipost:</span>
+      <select value={filterPostMode} onChange={e => { setFilterPostMode(e.target.value); setFilterPostBulan(''); setFilterPostFrom(''); setFilterPostTo('') }}
+        className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="">Semua</option>
+        <option value="bulan">Bulan</option>
+        <option value="range">Range</option>
+      </select>
+      {filterPostMode === 'bulan' && (
+        <select value={filterPostBulan} onChange={e => setFilterPostBulan(e.target.value)}
+          className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">Pilih Bulan</option>
+          {BULAN.map((b, i) => <option key={i} value={i}>{b}</option>)}
+        </select>
+      )}
+      {filterPostMode === 'range' && (
+        <div className="flex items-center gap-1">
+          <input type="date" value={filterPostFrom} onChange={e => setFilterPostFrom(e.target.value)}
+            className="border border-gray-300 rounded-lg px-2 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <span className="text-gray-500 text-sm">–</span>
+          <input type="date" value={filterPostTo} onChange={e => setFilterPostTo(e.target.value)}
+            className="border border-gray-300 rounded-lg px-2 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+      )}
+    </div>
+
+    {/* Reset Filter */}
+    {(filterStatus || filterCampaign || filterKirimMode || filterPostMode) && (
+      <button onClick={() => {
+        setFilterStatus(''); setFilterCampaign('')
+        setFilterKirimMode(''); setFilterKirimBulan(''); setFilterKirimFrom(''); setFilterKirimTo('')
+        setFilterPostMode(''); setFilterPostBulan(''); setFilterPostFrom(''); setFilterPostTo('')
+      }}
+        className="text-red-500 hover:text-red-700 text-sm font-medium px-3 py-2 rounded-lg hover:bg-red-50">
+        ✕ Reset Filter
+      </button>
+    )}
+  </div>
+</div>
 
       {/* Bulk Action Bar */}
       {selected.length > 0 && (
