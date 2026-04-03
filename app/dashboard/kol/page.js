@@ -287,31 +287,64 @@ function resetForm() {
 
               {/* Alamat - Opsional */}
               <div className="border border-gray-200 rounded-xl p-4 space-y-3">
-                <p className="text-sm font-semibold text-gray-700">📍 Alamat (Opsional)</p>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Provinsi</label>
-                  <input type="text" value={form.provinsi}
-                    onChange={e => setForm({...form, provinsi: e.target.value})}
-                    placeholder="Contoh: Jawa Barat"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Kota/Kabupaten</label>
-                    <input type="text" value={form.kota_kab}
-                      onChange={e => setForm({...form, kota_kab: e.target.value})}
-                      placeholder="Contoh: Bandung"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Kecamatan</label>
-                    <input type="text" value={form.kecamatan}
-                      onChange={e => setForm({...form, kecamatan: e.target.value})}
-                      placeholder="Contoh: Cicendo"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  </div>
-                </div>
-              </div>
+  <p className="text-sm font-semibold text-gray-700">📍 Alamat (Opsional)</p>
+  
+  <div>
+    <label className="block text-xs font-medium text-gray-700 mb-1">Provinsi</label>
+    <select value={selectedProvinsiId}
+      onChange={e => {
+        const selected = provinsiList.find(p => p.id === e.target.value)
+        setSelectedProvinsiId(e.target.value)
+        setForm({...form, provinsi: selected?.name || '', kota_kab: '', kecamatan: ''})
+        fetchKota(e.target.value)
+      }}
+      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <option value="">-- Pilih Provinsi --</option>
+      {provinsiList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+    </select>
+  </div>
+
+  <div className="grid grid-cols-2 gap-3">
+    <div>
+      <label className="block text-xs font-medium text-gray-700 mb-1">
+        Kota/Kabupaten {loadingWilayah && <span className="text-gray-400 text-xs">Loading...</span>}
+      </label>
+      <select value={selectedKotaId}
+        onChange={e => {
+          const selected = kotaList.find(k => k.id === e.target.value)
+          setSelectedKotaId(e.target.value)
+          setForm({...form, kota_kab: selected?.name || '', kecamatan: ''})
+          fetchKecamatan(e.target.value)
+        }}
+        disabled={kotaList.length === 0}
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-400">
+        <option value="">-- Pilih Kota/Kab --</option>
+        {kotaList.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}
+      </select>
+    </div>
+    <div>
+      <label className="block text-xs font-medium text-gray-700 mb-1">
+        Kecamatan {loadingWilayah && <span className="text-gray-400 text-xs">Loading...</span>}
+      </label>
+      <select value={form.kecamatan}
+        onChange={e => setForm({...form, kecamatan: e.target.value})}
+        disabled={kecamatanList.length === 0}
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-400">
+        <option value="">-- Pilih Kecamatan --</option>
+        {kecamatanList.map(k => <option key={k.id} value={k.name}>{k.name}</option>)}
+      </select>
+    </div>
+  </div>
+
+  <div>
+    <label className="block text-xs font-medium text-gray-700 mb-1">Alamat Lengkap</label>
+    <textarea value={form.alamat_lengkap || ''}
+      onChange={e => setForm({...form, alamat_lengkap: e.target.value})}
+      placeholder="Contoh: Jl. Merdeka No. 10 RT 01/RW 02"
+      rows={2}
+      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+  </div>
+</div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-800 mb-1">Catatan</label>
