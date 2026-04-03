@@ -170,7 +170,29 @@ export default function CampaignDetailPage() {
     setDropdownOpen(null)
   }
 
+  async function handleTandaiKirim(ck) {
+    const tanggal = prompt(
+      `Tandai sudah kirim untuk ${ck.kols?.nama}?\n\nMasukkan tanggal kirim (YYYY-MM-DD):`,
+      new Date().toISOString().split('T')[0]
+    )
+    if (!tanggal) return
+    const res = await fetch('/api/campaign/kol', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: ck.id,
+        status_kirim: 'sudah',
+        tanggal_kirim: tanggal
+      })
+    })
+    const result = await res.json()
+    if (result.error) { alert('Error: ' + result.error); return }
+    setDropdownOpen(null)
+    fetchDetail()
+  }
+
   function formatRupiah(num) {
+
     return new Intl.NumberFormat('id-ID', {
       style: 'currency', currency: 'IDR', minimumFractionDigits: 0
     }).format(num || 0)
@@ -386,7 +408,11 @@ export default function CampaignDetailPage() {
                   <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{formatRupiah(ck.ongkos_kirim)}</td>
                   <td className="px-4 py-3 font-semibold text-gray-900 whitespace-nowrap">{formatRupiah(ck.total_spending)}</td>
                   <td className="px-4 py-3 text-gray-700 whitespace-nowrap text-xs">{ck.kota || '-'}</td>
-                  <td className="px-4 py-3 text-gray-700 whitespace-nowrap text-xs">{ck.tanggal_kirim_barang || '-'}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-xs">
+                    {ck.status_kirim === 'sudah'
+                      ? <span className="text-green-600 font-medium">✅ {ck.tanggal_kirim || ck.tanggal_kirim_barang || '-'}</span>
+                      : <span className="text-gray-400">Belum kirim</span>}
+                  </td>
                   <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{formatNumber(ck.engagement?.views)}</td>
                   <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{formatNumber(ck.engagement?.likes)}</td>
                   <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{formatNumber(ck.engagement?.komentar)}</td>
@@ -420,6 +446,17 @@ export default function CampaignDetailPage() {
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                           💬 Follow Up WA
                         </button>
+                        {ck.status_kirim !== 'sudah' ? (
+                          <button onClick={() => handleTandaiKirim(ck)}
+                            className="w-full text-left px-4 py-2 text-sm text-green-600 hover:bg-green-50">
+                            📦 Tandai Sudah Kirim
+                          </button>
+                        ) : (
+                          <button onClick={() => handleTandaiKirim(ck)}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-400 hover:bg-gray-50">
+                            📦 Sudah Kirim ✓
+                          </button>
+                        )}
                         <button onClick={() => handleRemoveKol(ck.id)}
                           className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                           🗑️ Hapus

@@ -5,10 +5,11 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 const menuItems = [
-  { href: '/dashboard',         label: 'Dashboard',  icon: '📊', roles: ['admin','manager','finance','viewer'] },
-  { href: '/dashboard/kol',     label: 'Kelola KOL', icon: '👥', roles: ['admin','manager'] },
-  { href: '/dashboard/posting', label: 'Tracking',   icon: '📝', roles: ['admin','manager'] },
-  { href: '/dashboard/laporan', label: 'Laporan',    icon: '📈', roles: ['admin','manager','finance'] },
+  { href: '/dashboard',          label: 'Dashboard',          icon: '📊', roles: ['admin','manager','finance','viewer'] },
+  { href: '/dashboard/produk',   label: 'Master Produk',      icon: '📦', roles: ['admin','manager'] },
+  { href: '/dashboard/kol',      label: 'Kelola KOL',         icon: '👥', roles: ['admin','manager'] },
+  { href: '/dashboard/campaign', label: 'Campaign',           icon: '🎯', roles: ['admin','manager'] },
+  { href: '/dashboard/tracking', label: 'Tracking & Laporan', icon: '📝', roles: ['admin','manager','finance'] },
 ]
 
 const roleBadge = {
