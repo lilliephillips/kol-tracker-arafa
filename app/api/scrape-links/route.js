@@ -14,8 +14,8 @@ function normalizeUrl(url) {
 }
 
 function extractVideoId(url) {
-  const match = url.match(/\/video\/(\d+)/)
-  return match ? match[1] : null
+  const match = url.match(/\/(video|photo)\/(\d+)/)
+  return match ? match[2] : null
 }
 
 // POST: mulai scraping async — langsung return run_id tanpa tunggu
