@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
-// Generate kode unik otomatis
 function generateKodeUnik(namaKampanye) {
   const prefix = namaKampanye
     .toUpperCase()
@@ -26,7 +25,6 @@ export async function POST(request) {
     .eq('id', body.campaign_id)
     .single()
 
-  // Hitung hpp_total
   const hpp_total = (body.hpp_satuan || 0) * (body.quantity || 1)
 
   const payload = {
@@ -35,14 +33,31 @@ export async function POST(request) {
     hpp_total,
   }
 
-  const { data, error } = await supabase
+  // Simpan ke campaign_kols
+  const { data: ck, error } = await supabase
     .from('campaign_kols')
     .insert([payload])
     .select()
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+
+  // Otomatis buat posting baru di tabel postings
+  try {
+    await supabase
+      .from('postings')
+      .insert([{
+        kol_id: body.kol_id,
+        campaign_kol_id: ck.id,
+        status: 'belum',
+        tanggal_deadline: body.tanggal_kirim_barang || null,
+        catatan: body.catatan || '',
+      }])
+  } catch (postingErr) {
+    console.error('Error buat posting otomatis:', postingErr)
+  }
+
+  return NextResponse.json(ck)
 }
 
 export async function PUT(request) {
@@ -53,7 +68,6 @@ export async function PUT(request) {
   const body = await request.json()
   const { id, ...updateData } = body
 
-  // Recalculate hpp_total kalau ada perubahan qty/hpp
   if (updateData.quantity || updateData.hpp_satuan) {
     updateData.hpp_total = (updateData.hpp_satuan || 0) * (updateData.quantity || 1)
   }
@@ -76,6 +90,12 @@ export async function DELETE(request) {
 
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('id')
+
+  // Hapus posting yang terhubung dulu
+  await supabase
+    .from('postings')
+    .delete()
+    .eq('campaign_kol_id', id)
 
   const { error } = await supabase.from('campaign_kols').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
