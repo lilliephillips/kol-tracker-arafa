@@ -5,7 +5,6 @@ export async function GET(request) {
 
   const { searchParams } = new URL(request.url)
   const status = searchParams.get('status')
-  const campaign_id = searchParams.get('campaign_id')
 
   try {
     let query = supabase
@@ -21,14 +20,13 @@ export async function GET(request) {
     const { data, error } = await query
 
     if (error) {
-      console.error('Posting query error:', error)
+      console.error('Error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json(Array.isArray(data) ? data : [])
 
   } catch (err) {
-    console.error('Posting GET error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
