@@ -1,10 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
-// GET - Ambil semua KOL
 export async function GET(request) {
   const supabase = await createClient()
-  
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -15,7 +13,10 @@ export async function GET(request) {
 
   let query = supabase
     .from('kols')
-    .select('*')
+    .select(`
+      *,
+      ditambahkan_oleh_profile:ditambahkan_oleh(id, nama, email)
+    `)
     .order('created_at', { ascending: false })
 
   if (platform) query = query.eq('platform', platform)
@@ -25,19 +26,21 @@ export async function GET(request) {
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  
   return NextResponse.json(data)
 }
 
-// POST - Tambah KOL baru
 export async function POST(request) {
   const supabase = await createClient()
-  
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
   
+  // Normalize nomor WA
+  if (body.no_wa) {
+    body.no_wa = normalizeWA(body.no_wa)
+  }
+
   const { data, error } = await supabase
     .from('kols')
     .insert([{ ...body, created_by: user.id }])
@@ -48,15 +51,17 @@ export async function POST(request) {
   return NextResponse.json(data)
 }
 
-// PUT - Edit KOL
 export async function PUT(request) {
   const supabase = await createClient()
-  
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
   const { id, ...updateData } = body
+
+  if (updateData.no_wa) {
+    updateData.no_wa = normalizeWA(updateData.no_wa)
+  }
 
   const { data, error } = await supabase
     .from('kols')
@@ -69,10 +74,8 @@ export async function PUT(request) {
   return NextResponse.json(data)
 }
 
-// DELETE - Hapus KOL
 export async function DELETE(request) {
   const supabase = await createClient()
-  
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -81,6 +84,13 @@ export async function DELETE(request) {
 
   const { error } = await supabase.from('kols').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  
   return NextResponse.json({ success: true })
+}
+
+function normalizeWA(no) {
+  no = no.replace(/\D/g, '') // hapus non-digit
+  if (no.startsWith('0')) no = '62' + no.slice(1)
+  if (no.startsWith('+')) no = no.slice(1)
+  if (!no.startsWith('62')) no = '62' + no
+  return no
 }
