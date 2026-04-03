@@ -20,12 +20,17 @@ export default function KolPage() {
   const [search, setSearch] = useState('')
   const [filterPlatform, setFilterPlatform] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
-
+const [provinsiList, setProvinsiList] = useState([])
+const [kotaList, setKotaList] = useState([])
+const [kecamatanList, setKecamatanList] = useState([])
+const [loadingWilayah, setLoadingWilayah] = useState(false)
+const [selectedProvinsiId, setSelectedProvinsiId] = useState('')
+const [selectedKotaId, setSelectedKotaId] = useState('')
   const [form, setForm] = useState({
-    nama: '', handle: '', platform: 'tiktok', no_wa: '',
-    provinsi: '', kota_kab: '', kecamatan: '',
-    catatan: '', ditambahkan_oleh: '', status_aktif: true
-  })
+  nama: '', handle: '', platform: 'tiktok', no_wa: '',
+  provinsi: '', kota_kab: '', kecamatan: '', alamat_lengkap: '',
+  catatan: '', ditambahkan_oleh: '', status_aktif: true
+})
 
   useEffect(() => { fetchAll() }, [search, filterPlatform, filterStatus])
 
@@ -54,32 +59,42 @@ export default function KolPage() {
     setLoading(false)
   }
 
-  function resetForm() {
-    setForm({
-      nama: '', handle: '', platform: 'tiktok', no_wa: '',
-      provinsi: '', kota_kab: '', kecamatan: '',
-      catatan: '', ditambahkan_oleh: '', status_aktif: true
-    })
-    setEditData(null)
-    setShowForm(false)
-  }
+function resetForm() {
+  setForm({
+    nama: '', handle: '', platform: 'tiktok', no_wa: '',
+    provinsi: '', kota_kab: '', kecamatan: '', alamat_lengkap: '',
+    catatan: '', ditambahkan_oleh: '', status_aktif: true
+  })
+  setSelectedProvinsiId('')
+  setSelectedKotaId('')
+  setKotaList([])
+  setKecamatanList([])
+  setEditData(null)
+  setShowForm(false)
+}
+  
 
-  function handleEdit(kol) {
-    setForm({
-      nama: kol.nama || '',
-      handle: kol.handle || '',
-      platform: kol.platform || 'tiktok',
-      no_wa: kol.no_wa || '',
-      provinsi: kol.provinsi || '',
-      kota_kab: kol.kota_kab || '',
-      kecamatan: kol.kecamatan || '',
-      catatan: kol.catatan || '',
-      ditambahkan_oleh: kol.ditambahkan_oleh || '',
-      status_aktif: kol.status_aktif
-    })
-    setEditData(kol)
-    setShowForm(true)
-  }
+  
+
+ function handleEdit(kol) {
+  setForm({
+    nama: kol.nama || '',
+    handle: kol.handle || '',
+    platform: kol.platform || 'tiktok',
+    no_wa: kol.no_wa || '',
+    provinsi: kol.provinsi || '',
+    kota_kab: kol.kota_kab || '',
+    kecamatan: kol.kecamatan || '',
+    alamat_lengkap: kol.alamat_lengkap || '',
+    catatan: kol.catatan || '',
+    ditambahkan_oleh: kol.ditambahkan_oleh || '',
+    status_aktif: kol.status_aktif
+  })
+  setSelectedProvinsiId('')
+  setSelectedKotaId('')
+  setEditData(kol)
+  setShowForm(true)
+}
 
   async function handleSubmit(e) {
     e.preventDefault()
