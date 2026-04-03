@@ -1,4 +1,7 @@
 'use client'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
+import { id } from 'date-fns/locale'
 
 import { useState, useEffect } from 'react'
 
@@ -22,12 +25,12 @@ export default function PostingPage() {
   const [filterCampaign, setFilterCampaign] = useState('')
   const [filterKirimMode, setFilterKirimMode] = useState('') // 'bulan' or 'range'
   const [filterKirimBulan, setFilterKirimBulan] = useState('')
-  const [filterKirimFrom, setFilterKirimFrom] = useState('')
-  const [filterKirimTo, setFilterKirimTo] = useState('')
+  const [filterKirimFrom, setFilterKirimFrom] = useState(null)
+const [filterKirimTo, setFilterKirimTo] = useState(null)
   const [filterPostMode, setFilterPostMode] = useState('')
   const [filterPostBulan, setFilterPostBulan] = useState('')
-  const [filterPostFrom, setFilterPostFrom] = useState('')
-  const [filterPostTo, setFilterPostTo] = useState('')
+  const [filterPostFrom, setFilterPostFrom] = useState(null)
+const [filterPostTo, setFilterPostTo] = useState(null)
 
   // Link input state
   const [showLinkForm, setShowLinkForm] = useState(null)
@@ -70,20 +73,26 @@ export default function PostingPage() {
       const bulan = new Date(tgl).getMonth()
       if (bulan !== parseInt(filterKirimBulan)) return false
     }
-    if (filterKirimMode === 'range' && filterKirimFrom && filterKirimTo) {
-      const tgl = p.campaign_kol?.tanggal_kirim_barang
-      if (!tgl || tgl < filterKirimFrom || tgl > filterKirimTo) return false
-    }
+   if (filterKirimMode === 'range' && filterKirimFrom) {
+  const tgl = p.campaign_kol?.tanggal_kirim_barang
+  if (!tgl) return false
+  const tglDate = new Date(tgl)
+  if (tglDate < filterKirimFrom) return false
+  if (filterKirimTo && tglDate > filterKirimTo) return false
+}
     if (filterPostMode === 'bulan' && filterPostBulan) {
       const tgl = p.tanggal_dipost
       if (!tgl) return false
       const bulan = new Date(tgl).getMonth()
       if (bulan !== parseInt(filterPostBulan)) return false
     }
-    if (filterPostMode === 'range' && filterPostFrom && filterPostTo) {
-      const tgl = p.tanggal_dipost
-      if (!tgl || tgl < filterPostFrom || tgl > filterPostTo) return false
-    }
+   if (filterPostMode === 'range' && filterPostFrom) {
+  const tgl = p.tanggal_dipost
+  if (!tgl) return false
+  const tglDate = new Date(tgl)
+  if (tglDate < filterPostFrom) return false
+  if (filterPostTo && tglDate > filterPostTo) return false
+}
     return true
   })
 
@@ -270,15 +279,24 @@ export default function PostingPage() {
           {BULAN.map((b, i) => <option key={i} value={i}>{b}</option>)}
         </select>
       )}
-      {filterKirimMode === 'range' && (
-        <div className="flex items-center gap-1">
-          <input type="date" value={filterKirimFrom} onChange={e => setFilterKirimFrom(e.target.value)}
-            className="border border-gray-300 rounded-lg px-2 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          <span className="text-gray-500 text-sm">–</span>
-          <input type="date" value={filterKirimTo} onChange={e => setFilterKirimTo(e.target.value)}
-            className="border border-gray-300 rounded-lg px-2 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        </div>
-      )}
+    {filterKirimMode === 'range' && (
+  <div className="flex items-center gap-1">
+    <DatePicker
+      selectsRange
+      startDate={filterKirimFrom}
+      endDate={filterKirimTo}
+      onChange={([start, end]) => { setFilterKirimFrom(start); setFilterKirimTo(end) }}
+      locale={id}
+      dateFormat="dd/MM/yyyy"
+      placeholderText="Pilih range tanggal"
+      isClearable
+      showMonthDropdown
+      showYearDropdown
+      dropdownMode="select"
+      className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 w-56"
+    />
+  </div>
+)}
     </div>
 
     {/* Filter Tgl Dipost */}
@@ -298,22 +316,30 @@ export default function PostingPage() {
         </select>
       )}
       {filterPostMode === 'range' && (
-        <div className="flex items-center gap-1">
-          <input type="date" value={filterPostFrom} onChange={e => setFilterPostFrom(e.target.value)}
-            className="border border-gray-300 rounded-lg px-2 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          <span className="text-gray-500 text-sm">–</span>
-          <input type="date" value={filterPostTo} onChange={e => setFilterPostTo(e.target.value)}
-            className="border border-gray-300 rounded-lg px-2 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        </div>
-      )}
+  <div className="flex items-center gap-1">
+    <DatePicker
+      selectsRange
+      startDate={filterPostFrom}
+      endDate={filterPostTo}
+      onChange={([start, end]) => { setFilterPostFrom(start); setFilterPostTo(end) }}
+      locale={id}
+      dateFormat="dd/MM/yyyy"
+      placeholderText="Pilih range tanggal"
+      isClearable
+      showMonthDropdown
+      showYearDropdown
+      dropdownMode="select"
+      className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 w-56"
+    />
+  </div>
+)}
     </div>
 
     {/* Reset Filter */}
     {(filterStatus || filterCampaign || filterKirimMode || filterPostMode) && (
       <button onClick={() => {
-        setFilterStatus(''); setFilterCampaign('')
-        setFilterKirimMode(''); setFilterKirimBulan(''); setFilterKirimFrom(''); setFilterKirimTo('')
-        setFilterPostMode(''); setFilterPostBulan(''); setFilterPostFrom(''); setFilterPostTo('')
+        setFilterKirimMode(''); setFilterKirimBulan(''); setFilterKirimFrom(null); setFilterKirimTo(null)
+setFilterPostMode(''); setFilterPostBulan(''); setFilterPostFrom(null); setFilterPostTo(null)
       }}
         className="text-red-500 hover:text-red-700 text-sm font-medium px-3 py-2 rounded-lg hover:bg-red-50">
         ✕ Reset Filter
