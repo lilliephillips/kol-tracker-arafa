@@ -134,11 +134,14 @@ function TandaiKirimButton({ ckId, kolNama, onDone }) {
 // ─── TOMBOL SCRAPE APIFY ─────────────────────────────────────
 function ScrapeButton({ onDone }) {
   const [status, setStatus] = useState(null)
-  const [result, setResult] = useState(null)
+  const [message, setMessage] = useState(null)
+  const [runId, setRunId] = useState(null)
+  const [checking, setChecking] = useState(false)
 
   async function handleScrape() {
     setStatus('loading')
-    setResult(null)
+    setMessage(null)
+    setRunId(null)
     try {
       const res = await fetch('/api/scrape-links', {
         method: 'POST',
@@ -148,33 +151,101 @@ function ScrapeButton({ onDone }) {
       const data = await res.json()
       if (data.error) {
         setStatus('error')
-        setResult(data.error)
-      } else {
+        setMessage(data.error)
+      } else if (!data.run_id) {
         setStatus('done')
-        setResult(`${data.updated} link berhasil diupdate dari ${data.total_links} link`)
-        onDone()
+        setMessage(data.message || 'Tidak ada link yang perlu di-scrape')
+      } else {
+        setStatus('waiting')
+        setRunId(data.run_id)
+        setMessage(`Scraping dimulai (${data.total_links} link). Tunggu 2 menit lalu klik Cek Hasil.`)
+        // Auto poll setiap 15 detik
+        autoPoll(data.run_id)
       }
     } catch (err) {
       setStatus('error')
-      setResult(err.message)
+      setMessage(err.message)
     }
   }
 
+  async function autoPoll(rid) {
+    let attempts = 0
+    const maxAttempts = 10 // max 10x = 150 detik
+    const interval = setInterval(async () => {
+      attempts++
+      try {
+        const res = await fetch(`/api/scrape-links?run_id=${rid}`)
+        const data = await res.json()
+        if (data.status === 'SUCCEEDED') {
+          clearInterval(interval)
+          setStatus('done')
+          setRunId(null)
+          setMessage(`✅ ${data.updated} link berhasil diupdate!`)
+          onDone()
+        } else if (data.status === 'FAILED' || data.status === 'ABORTED' || data.status === 'TIMED-OUT') {
+          clearInterval(interval)
+          setStatus('error')
+          setMessage(`Scraping gagal: ${data.status}`)
+        } else if (attempts >= maxAttempts) {
+          clearInterval(interval)
+          setStatus('error')
+          setMessage('Timeout — scraping terlalu lama. Coba klik Cek Hasil manual.')
+          setRunId(rid) // kembalikan run_id untuk manual check
+        } else {
+          setMessage(`Sedang scraping... (${attempts * 15}s)`)
+        }
+      } catch (err) {
+        clearInterval(interval)
+        setStatus('error')
+        setMessage('Error saat cek: ' + err.message)
+      }
+    }, 15000) // cek tiap 15 detik
+  }
+
+  async function handleCekHasil() {
+    if (!runId) return
+    setChecking(true)
+    try {
+      const res = await fetch(`/api/scrape-links?run_id=${runId}`)
+      const data = await res.json()
+      if (data.status === 'SUCCEEDED') {
+        setStatus('done')
+        setMessage(`✅ ${data.updated} link berhasil diupdate!`)
+        setRunId(null)
+        onDone()
+      } else {
+        setMessage(`Masih ${data.status || 'berjalan'}... coba lagi sebentar`)
+      }
+    } catch (err) {
+      setMessage('Error: ' + err.message)
+    }
+    setChecking(false)
+  }
+
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 flex-wrap">
       <button
         onClick={handleScrape}
-        disabled={status === 'loading'}
+        disabled={status === 'loading' || status === 'waiting'}
         className="border border-blue-200 text-blue-600 rounded-lg px-3 py-2 text-sm font-medium hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-        {status === 'loading'
-          ? <><span className="animate-spin inline-block">⏳</span> Sedang scraping...</>
-          : '🔄 Ambil Data Views'}
+        {status === 'loading' ? '⏳ Memulai...' : status === 'waiting' ? '⏳ Scraping...' : '🔄 Ambil Data Views'}
       </button>
-      {status === 'done' && (
-        <span className="text-xs text-green-600 font-medium">✅ {result}</span>
+      {(status === 'waiting' || status === 'error') && runId && (
+        <button
+          onClick={handleCekHasil}
+          disabled={checking}
+          className="border border-green-200 text-green-600 rounded-lg px-3 py-2 text-sm font-medium hover:bg-green-50 disabled:opacity-50">
+          {checking ? '⏳ Mengecek...' : '🔍 Cek Hasil'}
+        </button>
       )}
-      {status === 'error' && (
-        <span className="text-xs text-red-600">❌ {result}</span>
+      {message && (
+        <span className={`text-xs font-medium ${
+          status === 'error' ? 'text-red-600' :
+          status === 'done' ? 'text-green-600' :
+          'text-blue-600'
+        }`}>
+          {message}
+        </span>
       )}
     </div>
   )
