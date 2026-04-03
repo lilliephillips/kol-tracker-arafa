@@ -46,6 +46,7 @@ const [selectedKotaId, setSelectedKotaId] = useState('')
       fetch('/api/users'),
       fetch('/api/me'),
     ])
+    
 
     const [kolData, userData, meData] = await Promise.all([
       kolRes.json(),
@@ -58,6 +59,49 @@ const [selectedKotaId, setSelectedKotaId] = useState('')
     setCurrentUser(meData)
     setLoading(false)
   }
+
+  useEffect(() => { fetchProvinsi() }, [])
+
+async function fetchProvinsi() {
+  try {
+    const res = await fetch('https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json')
+    const data = await res.json()
+    setProvinsiList(data || [])
+  } catch (err) {
+    console.error('Error fetch provinsi:', err)
+  }
+}
+
+async function fetchKota(provinsiId) {
+  setKotaList([])
+  setKecamatanList([])
+  setForm(prev => ({ ...prev, kota_kab: '', kecamatan: '' }))
+  if (!provinsiId) return
+  try {
+    setLoadingWilayah(true)
+    const res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${provinsiId}.json`)
+    const data = await res.json()
+    setKotaList(data || [])
+  } catch (err) {
+    console.error('Error fetch kota:', err)
+  }
+  setLoadingWilayah(false)
+}
+
+async function fetchKecamatan(kotaId) {
+  setKecamatanList([])
+  setForm(prev => ({ ...prev, kecamatan: '' }))
+  if (!kotaId) return
+  try {
+    setLoadingWilayah(true)
+    const res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/districts/${kotaId}.json`)
+    const data = await res.json()
+    setKecamatanList(data || [])
+  } catch (err) {
+    console.error('Error fetch kecamatan:', err)
+  }
+  setLoadingWilayah(false)
+}
 
 function resetForm() {
   setForm({
