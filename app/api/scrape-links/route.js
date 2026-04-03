@@ -30,7 +30,7 @@ async function runApifyActor(actorId, input) {
 }
 
 async function scrapeTikTok(urls) {
-  const items = await runApifyActor('clockworks/tiktok-scraper', {
+  const items = await runApifyActor('GdWCkxBtKWOsKjdch', {
     postURLs: urls,
     resultsType: 'posts',
     maxPostsPerQuery: urls.length
