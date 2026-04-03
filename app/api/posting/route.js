@@ -29,12 +29,9 @@ export async function GET(request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   // Filter by campaign kalau ada
-  let result = data || []
-  if (campaign_id) {
-    result = result.filter(p => p.campaign_kol?.campaigns?.id === campaign_id)
-  }
-
-  return NextResponse.json(result)
+ let result = Array.isArray(data) ? data : []
+if (campaign_id) {
+  result = result.filter(p => p.campaign_kol?.campaigns?.id === campaign_id)
 }
 
 export async function POST(request) {
