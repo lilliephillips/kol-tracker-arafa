@@ -131,6 +131,55 @@ function TandaiKirimButton({ ckId, kolNama, onDone }) {
   )
 }
 
+// ─── TOMBOL SCRAPE APIFY ─────────────────────────────────────
+function ScrapeButton({ onDone }) {
+  const [status, setStatus] = useState(null)
+  const [result, setResult] = useState(null)
+
+  async function handleScrape() {
+    setStatus('loading')
+    setResult(null)
+    try {
+      const res = await fetch('/api/scrape-links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      })
+      const data = await res.json()
+      if (data.error) {
+        setStatus('error')
+        setResult(data.error)
+      } else {
+        setStatus('done')
+        setResult(`${data.updated} link berhasil diupdate dari ${data.total_links} link`)
+        onDone()
+      }
+    } catch (err) {
+      setStatus('error')
+      setResult(err.message)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        onClick={handleScrape}
+        disabled={status === 'loading'}
+        className="border border-blue-200 text-blue-600 rounded-lg px-3 py-2 text-sm font-medium hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+        {status === 'loading'
+          ? <><span className="animate-spin inline-block">⏳</span> Sedang scraping...</>
+          : '🔄 Ambil Data Views'}
+      </button>
+      {status === 'done' && (
+        <span className="text-xs text-green-600 font-medium">✅ {result}</span>
+      )}
+      {status === 'error' && (
+        <span className="text-xs text-red-600">❌ {result}</span>
+      )}
+    </div>
+  )
+}
+
 // ─── KOL ROW (expandable) ────────────────────────────────────
 function KolRow({ ck, onRefresh }) {
   const [expanded, setExpanded] = useState(false)
@@ -705,6 +754,7 @@ export default function TrackingLaporanPage() {
               <option value="sudah">Sudah Posting</option>
               <option value="belum">Belum Posting</option>
             </select>
+            {viewLaporan === 'manager' && <ScrapeButton onDone={fetchAll} />}
           </div>
 
           {/* VIEW MANAJER */}
