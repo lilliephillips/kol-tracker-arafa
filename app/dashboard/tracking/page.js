@@ -71,6 +71,65 @@ function PlatformPills({ platforms }) {
     </div>
   )
 }
+// ─── TOMBOL TANDAI KIRIM ─────────────────────────────────────
+function TandaiKirimButton({ ckId, kolNama, onDone }) {
+  const [showForm, setShowForm] = useState(false)
+  const [tanggal, setTanggal] = useState(new Date().toISOString().split('T')[0])
+  const [saving, setSaving] = useState(false)
+
+  async function handleSimpan() {
+    setSaving(true)
+    const res = await fetch('/api/campaign/kol', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: ckId,
+        status_kirim: 'sudah',
+        tanggal_kirim: tanggal
+      })
+    })
+    const result = await res.json()
+    if (result.error) {
+      alert('Error: ' + result.error)
+    } else {
+      setShowForm(false)
+      onDone()
+    }
+    setSaving(false)
+  }
+
+  if (!showForm) {
+    return (
+      <button
+        onClick={e => { e.stopPropagation(); setShowForm(true) }}
+        className="text-xs bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 px-2 py-1 rounded-lg font-medium whitespace-nowrap">
+        📦 Tandai Kirim
+      </button>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+      <input
+        type="date"
+        value={tanggal}
+        onChange={e => setTanggal(e.target.value)}
+        className="border border-gray-300 rounded px-2 py-1 text-xs text-gray-800 w-32"
+      />
+      <button
+        onClick={handleSimpan}
+        disabled={saving}
+        className="text-xs bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white px-2 py-1 rounded font-medium">
+        {saving ? '...' : 'Simpan'}
+      </button>
+      <button
+        onClick={() => setShowForm(false)}
+        className="text-xs text-gray-400 hover:text-gray-600 px-1">
+        ✕
+      </button>
+    </div>
+  )
+}
 
 // ─── KOL ROW (expandable) ────────────────────────────────────
 function KolRow({ ck, onRefresh }) {
@@ -202,10 +261,10 @@ function KolRow({ ck, onRefresh }) {
           <div>{ck.kols?.nama}</div>
           <PlatformPills platforms={platforms.length > 0 ? platforms : ck.kols?.platform ? [ck.kols.platform] : []} />
         </td>
-        <td className="px-4 py-3 whitespace-nowrap">
+        <td className="px-4 py-3 whitespace-nowrap" onClick={e => e.stopPropagation()}>
           {ck.status_kirim === 'sudah'
-            ? <Badge color="green">Sudah Kirim</Badge>
-            : <Badge color="gray">Belum Kirim</Badge>}
+            ? <span className="text-green-600 text-xs font-medium">✅ {ck.tanggal_kirim || '-'}</span>
+            : <TandaiKirimButton ckId={ck.id} kolNama={ck.kols?.nama} onDone={onRefresh} />}
         </td>
         <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">{formatTanggal(ck.tanggal_kirim)}</td>
         <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">
