@@ -78,12 +78,34 @@ export default function CampaignDetailPage() {
     Number(formKol.ongkos_kirim)
 
   async function handleAddKol(e) {
-    e.preventDefault()
-    await fetch('/api/campaign/kol', {
+  e.preventDefault()
+  try {
+    const payload = {
+      campaign_id: id,
+      kol_id: formKol.kol_id,
+      fee_kol: Number(formKol.fee_kol) || 0,
+      produk_variasi_id: formKol.produk_variasi_id || null,
+      hpp_satuan: Number(formKol.hpp_satuan) || 0,
+      quantity: Number(formKol.quantity) || 1,
+      ongkos_kirim: Number(formKol.ongkos_kirim) || 0,
+      kota: formKol.kota || '',
+      tanggal_kirim_barang: formKol.tanggal_kirim_barang || null,
+      catatan: formKol.catatan || '',
+      hpp_total: (Number(formKol.hpp_satuan) || 0) * (Number(formKol.quantity) || 1)
+    }
+
+    const res = await fetch('/api/campaign/kol', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ campaign_id: id, ...formKol })
+      body: JSON.stringify(payload)
     })
+
+    const result = await res.json()
+    if (result.error) {
+      alert('Error: ' + result.error)
+      return
+    }
+
     setFormKol({
       kol_id: '', fee_kol: 0, produk_variasi_id: '',
       hpp_satuan: 0, quantity: 1, ongkos_kirim: 0,
@@ -91,20 +113,11 @@ export default function CampaignDetailPage() {
     })
     setSelectedProduk(null)
     setShowAddKol(false)
-    fetchDetail()
+    await fetchDetail()
+  } catch (err) {
+    alert('Error: ' + err.message)
   }
-
-  async function handleRemoveKol(ckId) {
-    if (!confirm('Hapus KOL dari campaign ini?')) return
-    await fetch(`/api/campaign/kol?id=${ckId}`, { method: 'DELETE' })
-    fetchDetail()
-  }
-
-  function formatRupiah(num) {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency', currency: 'IDR', minimumFractionDigits: 0
-    }).format(num || 0)
-  }
+}
 
   // Hitung statistik campaign
   const totalSpending = kols.reduce((sum, ck) => sum + (ck.total_spending || 0), 0)
