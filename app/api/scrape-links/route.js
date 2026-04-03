@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
-const APIFY_TOKEN = process.env.APIFY_TOKEN
+const APIFY_TOKEN = process.env.APIFY_API_TOKEN
 
 async function runApifyActor(actorId, input) {
   const res = await fetch(
