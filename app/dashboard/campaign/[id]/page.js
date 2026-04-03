@@ -159,6 +159,11 @@ export default function CampaignDetailPage() {
 
   if (loading) return <div className="p-8 text-gray-400">Memuat data campaign...</div>
 
+  function formatRupiah(num) {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency', currency: 'IDR', minimumFractionDigits: 0
+  }).format(num || 0)
+}
   return (
     <div className="p-6 space-y-6">
 
