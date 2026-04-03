@@ -6,7 +6,7 @@ const APIFY_TOKEN = process.env.APIFY_API_TOKEN
 // Jalankan actor tanpa tunggu hasil (async)
 async function startApifyRun(actorId, input) {
   const res = await fetch(
-    `https://api.apify.com/v2/acts/${actorId}/runs?token=${APIFY_TOKEN}&memory=512`,
+    `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/runs?token=${APIFY_TOKEN}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
