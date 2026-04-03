@@ -3,39 +3,63 @@ import { NextResponse } from 'next/server'
 
 const APIFY_TOKEN = process.env.APIFY_API_TOKEN
 
-async function runApifyActor(actorId, input) {
-  console.log('🔵 Apify call:', actorId, JSON.stringify(input))
-  console.log('🔑 Token exists:', !!APIFY_TOKEN, 'length:', APIFY_TOKEN?.length)
-  
+// Jalankan actor tanpa tunggu hasil (async)
+async function startApifyRun(actorId, input) {
   const res = await fetch(
-    `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${APIFY_TOKEN}&timeout=60&memory=256`,
+    `https://api.apify.com/v2/acts/${actorId}/runs?token=${APIFY_TOKEN}&memory=512`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input)
     }
   )
-  
-  console.log('🟡 Apify response status:', res.status)
-  
   if (!res.ok) {
     const err = await res.text()
-    console.log('🔴 Apify error:', err)
-    throw new Error(`Apify error ${res.status}: ${err}`)
+    throw new Error(`Apify start error ${res.status}: ${err}`)
   }
-  
   const data = await res.json()
-  console.log('🟢 Apify result count:', data?.length, 'first item keys:', data?.[0] ? Object.keys(data[0]) : [])
-  return data
+  return data?.data?.id // run ID
+}
+
+// Tunggu run selesai dengan polling
+async function waitApifyRun(runId, maxWaitMs = 50000) {
+  const start = Date.now()
+  while (Date.now() - start < maxWaitMs) {
+    await new Promise(r => setTimeout(r, 5000)) // cek tiap 5 detik
+    const res = await fetch(
+      `https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`
+    )
+    const data = await res.json()
+    const status = data?.data?.status
+    console.log('⏳ Run status:', status)
+    if (status === 'SUCCEEDED') return runId
+    if (status === 'FAILED' || status === 'TIMED-OUT' || status === 'ABORTED') {
+      throw new Error(`Run ${status}: ${runId}`)
+    }
+  }
+  throw new Error('Polling timeout — run masih berjalan, coba lagi nanti')
+}
+
+// Ambil hasil dataset
+async function getApifyResults(runId) {
+  const res = await fetch(
+    `https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${APIFY_TOKEN}`
+  )
+  if (!res.ok) throw new Error('Gagal ambil dataset')
+  return res.json()
 }
 
 async function scrapeTikTok(urls) {
-  const items = await runApifyActor('GdWCkxBtKWOsKjdch', {
+  const runId = await startApifyRun('GdWCkxBtKWOsKjdch', {
     postURLs: urls,
     resultsType: 'posts',
     maxPostsPerQuery: urls.length
   })
-  // Map hasil ke format standar { url, views, likes, komentar }
+  console.log('🚀 TikTok run started:', runId)
+  await waitApifyRun(runId)
+  const items = await getApifyResults(runId)
+  console.log('✅ TikTok results:', items?.length, 'items')
+  console.log('🔍 First item keys:', items?.[0] ? Object.keys(items[0]) : [])
   return (items || []).map(item => ({
     url: item.webVideoUrl || item.url || '',
     views: item.playCount || item.viewCount || 0,
