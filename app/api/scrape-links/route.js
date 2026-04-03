@@ -4,6 +4,9 @@ import { NextResponse } from 'next/server'
 const APIFY_TOKEN = process.env.APIFY_API_TOKEN
 
 async function runApifyActor(actorId, input) {
+  console.log('🔵 Apify call:', actorId, JSON.stringify(input))
+  console.log('🔑 Token exists:', !!APIFY_TOKEN, 'length:', APIFY_TOKEN?.length)
+  
   const res = await fetch(
     `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${APIFY_TOKEN}&timeout=60&memory=256`,
     {
@@ -12,11 +15,18 @@ async function runApifyActor(actorId, input) {
       body: JSON.stringify(input)
     }
   )
+  
+  console.log('🟡 Apify response status:', res.status)
+  
   if (!res.ok) {
     const err = await res.text()
-    throw new Error(`Apify error: ${err}`)
+    console.log('🔴 Apify error:', err)
+    throw new Error(`Apify error ${res.status}: ${err}`)
   }
-  return res.json()
+  
+  const data = await res.json()
+  console.log('🟢 Apify result count:', data?.length, 'first item keys:', data?.[0] ? Object.keys(data[0]) : [])
+  return data
 }
 
 async function scrapeTikTok(urls) {
