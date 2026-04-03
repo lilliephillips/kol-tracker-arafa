@@ -137,30 +137,46 @@ export async function GET(request) {
 
     if (!items || items.length === 0) {
       return NextResponse.json({ status: 'SUCCEEDED', updated: 0, message: 'Tidak ada data hasil scraping' })
+    }console.log('📦 Total items dari Apify:', items?.length)
+    if (items?.[0]) {
+      console.log('🔍 Sample item:', JSON.stringify({
+        webVideoUrl: items[0].webVideoUrl,
+        url: items[0].url,
+        playCount: items[0].playCount,
+        diggCount: items[0].diggCount,
+        commentCount: items[0].commentCount,
+      }))
     }
 
     // Ambil semua posting_links
-    const { data: links } = await supabase
+    const { data: links, error: linksError } = await supabase
       .from('posting_links')
       .select('id, url_original, url_normalized')
+    
+    console.log('🗄️ Links di DB:', links?.length, linksError?.message)
+    if (links?.[0]) console.log('🔗 Sample link:', JSON.stringify({
+      url_original: links[0].url_original,
+      url_normalized: links[0].url_normalized
+    }))
 
     let updated = 0
     for (const item of items) {
       const itemUrl = item.webVideoUrl || item.url || ''
       const itemVideoId = extractVideoId(itemUrl)
-      console.log('🔎 Matching item:', itemUrl, '| videoId:', itemVideoId)
+      console.log('🎯 Item URL:', itemUrl, '| videoId:', itemVideoId)
 
       const match = (links || []).find(l => {
         if (itemVideoId) {
           const linkVideoId = extractVideoId(l.url_original)
+          console.log('   comparing videoId:', linkVideoId, '===', itemVideoId)
           if (linkVideoId && linkVideoId === itemVideoId) return true
         }
         return normalizeUrl(itemUrl) === l.url_normalized
       })
 
       if (match) {
-        console.log('✅ Match found:', match.url_original)
-        const { error } = await supabase
+        console.log('✅ Match:', match.url_original)
+        const { error: updateError } = await supabase
           .from('posting_links')
           .update({
             views: item.playCount || 0,
@@ -169,21 +185,9 @@ export async function GET(request) {
             last_scraped_at: new Date().toISOString()
           })
           .eq('id', match.id)
-        if (!error) updated++
+        console.log('💾 Update result:', updateError ? updateError.message : 'OK')
+        if (!updateError) updated++
       } else {
         console.log('⚠️ No match for:', itemUrl)
       }
     }
-
-    return NextResponse.json({
-      status: 'SUCCEEDED',
-      updated,
-      total_items: items.length,
-      message: updated > 0 ? `${updated} link berhasil diupdate!` : 'Data ditemukan tapi tidak ada yang cocok'
-    })
-
-  } catch (err) {
-    console.log('❌ GET error:', err.message)
-    return NextResponse.json({ error: err.message }, { status: 500 })
-  }
-}
