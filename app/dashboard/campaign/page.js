@@ -15,8 +15,8 @@ export default function CampaignPage() {
   const [showForm, setShowForm] = useState(false)
   const [editData, setEditData] = useState(null)
   const [form, setForm] = useState({
-    nama: '', deskripsi: '', status: 'aktif'
-  })
+  nama: '', deskripsi: '', status: 'aktif', budget: 0
+})
 
   useEffect(() => { fetchCampaigns() }, [])
 
@@ -36,10 +36,11 @@ export default function CampaignPage() {
 
   function handleEdit(campaign) {
     setForm({
-      nama: campaign.nama,
-      deskripsi: campaign.deskripsi || '',
-      status: campaign.status
-    })
+  nama: campaign.nama,
+  deskripsi: campaign.deskripsi || '',
+  status: campaign.status,
+  budget: campaign.budget || 0
+})
     setEditData(campaign)
     setShowForm(true)
   }
@@ -174,6 +175,7 @@ export default function CampaignPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select value={form.status}
+
                   onChange={e => setForm({...form, status: e.target.value})}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm 
                              focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -182,6 +184,25 @@ export default function CampaignPage() {
                   <option value="selesai">Selesai</option>
                 </select>
               </div>
+              <div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Budget Campaign (Rp)
+  </label>
+  <input
+    type="number"
+    value={form.budget}
+    onChange={e => setForm({...form, budget: e.target.value})}
+    placeholder="Contoh: 10000000"
+    min="0"
+    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm 
+               focus:outline-none focus:ring-2 focus:ring-blue-500"
+  />
+  {form.budget > 0 && (
+    <p className="text-xs text-gray-400 mt-1">
+      = {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(form.budget)}
+    </p>
+  )}
+</div>
               <div className="flex gap-3 pt-2">
                 <button type="submit"
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white 
