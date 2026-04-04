@@ -87,40 +87,46 @@ export default function CampaignDetailPage() {
     Number(formKol.ongkos_kirim)
 
   async function handleAddKol(e) {
-    e.preventDefault()
-    try {
-      const payload = {
-        campaign_id: id,
-        kol_id: formKol.kol_id,
-        fee_kol: Number(formKol.fee_kol) || 0,
-        produk_variasi_id: formKol.produk_variasi_id || null,
-        hpp_satuan: Number(formKol.hpp_satuan) || 0,
-        quantity: Number(formKol.quantity) || 1,
-        ongkos_kirim: Number(formKol.ongkos_kirim) || 0,
-        kota: formKol.kota || '',
-        tanggal_kirim_barang: formKol.tanggal_kirim_barang || null,
-        catatan: formKol.catatan || '',
-        hpp_total: (Number(formKol.hpp_satuan) || 0) * (Number(formKol.quantity) || 1)
-      }
-
-      const method = editKol ? 'PUT' : 'POST'
-      const body = editKol ? { id: editKol.id, ...payload } : payload
-
-      const res = await fetch('/api/campaign/kol', {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      })
-
-      const result = await res.json()
-      if (result.error) { alert('Error: ' + result.error); return }
-
-      resetForm()
-      fetchDetail()
-    } catch (err) {
-      alert('Error: ' + err.message)
+  e.preventDefault()
+  try {
+    const payload = {
+      campaign_id: id,
+      kol_id: formKol.kol_id,
+      fee_kol: Number(formKol.fee_kol) || 0,
+      produk_variasi_id: formKol.produk_variasi_id || null,
+      hpp_satuan: Number(formKol.hpp_satuan) || 0,
+      quantity: Number(formKol.quantity) || 1,
+      ongkos_kirim: Number(formKol.ongkos_kirim) || 0,
+      kota: formKol.kota || '',
+      tanggal_kirim_barang: formKol.tanggal_kirim_barang || null,
+      catatan: formKol.catatan || '',
+      hpp_total: (Number(formKol.hpp_satuan) || 0) * (Number(formKol.quantity) || 1)
     }
+
+    const res = await fetch('/api/campaign/kol', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+
+    const result = await res.json()
+    if (result.error) {
+      alert('Error: ' + result.error)
+      return
+    }
+
+    setFormKol({
+      kol_id: '', fee_kol: 0, produk_variasi_id: '',
+      hpp_satuan: 0, quantity: 1, ongkos_kirim: 0,
+      kota: '', tanggal_kirim_barang: '', catatan: ''
+    })
+    setSelectedProduk(null)
+    setShowAddKol(false)
+    await fetchDetail()
+  } catch (err) {
+    alert('Error: ' + err.message)
   }
+}
 
   function resetForm() {
     setFormKol({
