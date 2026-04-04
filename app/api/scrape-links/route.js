@@ -1,4 +1,4 @@
-// v4 - ganti actor ke scraperx~tiktok-data-extractor-scraper
+// v5 - pakai clockworks~free-tiktok-scraper dengan input yang benar
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
@@ -29,7 +29,6 @@ export async function POST(request) {
     const body = await request.json().catch(() => ({}))
     const { link_ids } = body
 
-    // Ambil TikTok links yang belum ada views
     let query = supabase
       .from('posting_links')
       .select('id, platform, url_original, url_normalized')
@@ -48,20 +47,24 @@ export async function POST(request) {
     }
 
     console.log('🚀 Starting Apify for', links.length, 'URLs')
-
     const link = links[0]
     console.log('📌 Scraping:', link.url_original)
 
-    // ✅ Ganti ke scraperx~tiktok-data-extractor-scraper
+    // ✅ clockworks~free-tiktok-scraper dengan input yang benar
     const runRes = await fetch(
-      `https://api.apify.com/v2/acts/scraperx~tiktok-data-extractor-scraper/runs?token=${APIFY_TOKEN}`,
+      `https://api.apify.com/v2/acts/clockworks~free-tiktok-scraper/runs?token=${APIFY_TOKEN}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          videoUrls: [link.url_original],   // ✅ pakai videoUrls bukan postURLs
-          resultsPerPage: 1,
-          proxyConfiguration: { useApifyProxy: true },
+          postURLs: [link.url_original],  // ✅ pakai postURLs
+          resultsType: 'posts',
+          maxPostsPerQuery: 1,
+          shouldDownloadVideos: false,
+          shouldDownloadCovers: false,
+          shouldDownloadAvatars: false,
+          shouldDownloadSubtitles: false,
+          shouldDownloadSlideshowImages: false,
         })
       }
     )
@@ -139,14 +142,13 @@ export async function GET(request) {
       return NextResponse.json({ status: 'SUCCEEDED', updated: 0, message: 'Tidak ada data hasil scraping' })
     }
 
-    // Ambil semua posting_links
     const { data: links } = await supabase
       .from('posting_links')
       .select('id, url_original, url_normalized')
 
     let updated = 0
     for (const item of items) {
-      const itemUrl = item.webVideoUrl || item.url || item.videoUrl || ''
+      const itemUrl = item.webVideoUrl || item.url || ''
       const itemVideoId = extractVideoId(itemUrl)
       console.log('🔎 Matching item:', itemUrl, '| videoId:', itemVideoId)
 
@@ -160,10 +162,8 @@ export async function GET(request) {
 
       if (match) {
         console.log('✅ Match found:', match.url_original)
-
-        // ✅ Fallback field lengkap untuk semua kemungkinan nama field
         const views    = item.playCount    ?? item.stats?.playCount    ?? 0
-        const likes    = item.diggCount    ?? item.likeCount           ?? item.stats?.diggCount    ?? 0
+        const likes    = item.diggCount    ?? item.stats?.diggCount    ?? 0
         const komentar = item.commentCount ?? item.stats?.commentCount ?? 0
 
         const { error } = await supabase
