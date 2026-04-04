@@ -1,4 +1,4 @@
-// v2 - one by one scraping
+// v3 - ganti actor ke free-tiktok-scraper + fix polling
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
@@ -47,14 +47,14 @@ export async function POST(request) {
       return NextResponse.json({ message: 'Tidak ada link TikTok yang perlu di-scrape', updated: 0 })
     }
 
-    console.log('🚀 Starting Apify for', links.length, 'URLs one by one')
+    console.log('🚀 Starting Apify for', links.length, 'URLs')
 
-    // Ambil link pertama yang belum di-scrape saja
     const link = links[0]
     console.log('📌 Scraping:', link.url_original)
 
+    // ✅ Ganti ke free-tiktok-scraper
     const runRes = await fetch(
-      `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/runs?token=${APIFY_TOKEN}`,
+      `https://api.apify.com/v2/acts/clockworks~free-tiktok-scraper/runs?token=${APIFY_TOKEN}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -62,10 +62,11 @@ export async function POST(request) {
           postURLs: [link.url_original],
           resultsType: 'posts',
           maxPostsPerQuery: 1,
-          resultsPerPage: 1,
           shouldDownloadVideos: false,
           shouldDownloadCovers: false,
           shouldDownloadAvatars: false,
+          shouldDownloadSubtitles: false,
+          shouldDownloadSlideshowImages: false,
         })
       }
     )
@@ -152,7 +153,6 @@ export async function GET(request) {
     for (const item of items) {
       const itemUrl = item.webVideoUrl || item.url || ''
       const itemVideoId = extractVideoId(itemUrl)
-      console.log('🔎 Matching item:', itemUrl, '| videoId:', itemVideoId)
 
       const match = (links || []).find(l => {
         if (itemVideoId) {
@@ -164,14 +164,15 @@ export async function GET(request) {
 
       if (match) {
         console.log('✅ Match found:', match.url_original)
+
+        // ✅ Fallback field untuk kompatibilitas actor baru
+        const views    = item.playCount    ?? item.stats?.playCount    ?? 0
+        const likes    = item.diggCount    ?? item.stats?.diggCount    ?? 0
+        const komentar = item.commentCount ?? item.stats?.commentCount ?? 0
+
         const { error } = await supabase
           .from('posting_links')
-          .update({
-            views: item.playCount || 0,
-            likes: item.diggCount || 0,
-            komentar: item.commentCount || 0,
-            last_scraped_at: new Date().toISOString()
-          })
+          .update({ views, likes, komentar, last_scraped_at: new Date().toISOString() })
           .eq('id', match.id)
         if (!error) updated++
       } else {
