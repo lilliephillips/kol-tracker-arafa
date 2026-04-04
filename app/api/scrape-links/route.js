@@ -1,4 +1,4 @@
-// v3 - ganti actor ke free-tiktok-scraper + fix polling
+// v4 - ganti actor ke scraperx~tiktok-data-extractor-scraper
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
@@ -52,21 +52,16 @@ export async function POST(request) {
     const link = links[0]
     console.log('📌 Scraping:', link.url_original)
 
-    // ✅ Ganti ke free-tiktok-scraper
+    // ✅ Ganti ke scraperx~tiktok-data-extractor-scraper
     const runRes = await fetch(
-      `https://api.apify.com/v2/acts/clockworks~free-tiktok-scraper/runs?token=${APIFY_TOKEN}`,
+      `https://api.apify.com/v2/acts/scraperx~tiktok-data-extractor-scraper/runs?token=${APIFY_TOKEN}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          postURLs: [link.url_original],
-          resultsType: 'posts',
-          maxPostsPerQuery: 1,
-          shouldDownloadVideos: false,
-          shouldDownloadCovers: false,
-          shouldDownloadAvatars: false,
-          shouldDownloadSubtitles: false,
-          shouldDownloadSlideshowImages: false,
+          videoUrls: [link.url_original],   // ✅ pakai videoUrls bukan postURLs
+          resultsPerPage: 1,
+          proxyConfiguration: { useApifyProxy: true },
         })
       }
     )
@@ -151,8 +146,9 @@ export async function GET(request) {
 
     let updated = 0
     for (const item of items) {
-      const itemUrl = item.webVideoUrl || item.url || ''
+      const itemUrl = item.webVideoUrl || item.url || item.videoUrl || ''
       const itemVideoId = extractVideoId(itemUrl)
+      console.log('🔎 Matching item:', itemUrl, '| videoId:', itemVideoId)
 
       const match = (links || []).find(l => {
         if (itemVideoId) {
@@ -165,9 +161,9 @@ export async function GET(request) {
       if (match) {
         console.log('✅ Match found:', match.url_original)
 
-        // ✅ Fallback field untuk kompatibilitas actor baru
+        // ✅ Fallback field lengkap untuk semua kemungkinan nama field
         const views    = item.playCount    ?? item.stats?.playCount    ?? 0
-        const likes    = item.diggCount    ?? item.stats?.diggCount    ?? 0
+        const likes    = item.diggCount    ?? item.likeCount           ?? item.stats?.diggCount    ?? 0
         const komentar = item.commentCount ?? item.stats?.commentCount ?? 0
 
         const { error } = await supabase
