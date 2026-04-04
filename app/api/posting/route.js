@@ -15,16 +15,16 @@ export async function GET(request) {
       .from('postings')
       .select(`
         id, kol_id, link_posting, tanggal_deadline,
-        tanggal_posting, tanggal_dipost, status, catatan, created_at,
+        tanggal_posting, status, catatan, created_at,
         campaign_kol_id,
-        kols(id, nama, platform, handle, niche, total_biaya, no_wa),
+        kols(id, nama, platform, handle, niche, total_biaya),
         campaign_kol:campaign_kol_id(
-          id, kode_unik, tanggal_kirim_barang,
+          id, kode_unik,
           campaigns(id, nama),
           produk_variasi(nama_variasi)
         )
       `)
-      .order('created_at', { ascending: false })
+      .order('tanggal_deadline', { ascending: true })
 
     if (status) query = query.eq('status', status)
 
@@ -38,9 +38,10 @@ export async function GET(request) {
     let result = Array.isArray(data) ? data : []
 
     if (campaign_id) {
-      result = result.filter(p =>
-        p.campaign_kol?.campaigns?.id === campaign_id
-      )
+      result = result.filter(p => {
+        return p.campaign_kol && p.campaign_kol.campaigns && 
+               p.campaign_kol.campaigns.id === campaign_id
+      })
     }
 
     return NextResponse.json(result)
@@ -58,9 +59,14 @@ export async function POST(request) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
+    const { campaign_kol_id, ...postingData } = body
+
+    const payload = { ...postingData, status: 'belum' }
+    if (campaign_kol_id) payload.campaign_kol_id = campaign_kol_id
+
     const { data, error } = await supabase
       .from('postings')
-      .insert([{ ...body, status: 'belum' }])
+      .insert([payload])
       .select()
       .single()
 

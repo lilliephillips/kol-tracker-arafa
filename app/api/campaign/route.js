@@ -22,7 +22,6 @@ export async function GET(request) {
         id, kode_unik, kol_id, fee_kol, hpp_satuan, quantity,
         hpp_total, ongkos_kirim, kota, total_spending,
         tanggal_kirim_barang, catatan,
-        status_kirim, tanggal_kirim,
         kols(id, nama, platform, handle, niche, fee_kol, biaya_produk, total_biaya, status_aktif),
         produk_variasi:produk_variasi_id(id, nama_variasi, ukuran, warna, hpp)
       `)
